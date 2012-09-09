@@ -3,35 +3,35 @@ package podsync;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Writer;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PodSync {
 
-	private Properties props = new Properties();
-	private File fnInput;
+	private final Map<String,String> fromToMap = new HashMap<String,String>();
 
 	PodSync(File propsFile) throws IOException {
-		fnInput=propsFile;
-		props.load(new BufferedReader(new FileReader(fnInput)));
-	}
+		
+		// use on property file format as the standard java class sucks
+		InputStream is = new FileInputStream(propsFile);
+		BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+		String key = reader.readLine();
+		String value;
+		while(key != null) {
+			value = reader.readLine();
+			fromToMap.put(key, value);
 
-	public void clear() {
-		props.clear();
-		storeProps();
-	}
-	public void add (String key, String value) {
-		props.setProperty(key, value);
-		storeProps();
+			key = reader.readLine();
+		}
+		reader.close();
 	}
 
 	public void run() {
@@ -39,11 +39,10 @@ public class PodSync {
 		// run
 		File fromDir;
 		File toDir;
-		for(Object key: props.keySet()) {
-			if(! (key instanceof String))
-				continue;
-			fromDir = new File((String)key);
-			toDir = new File(props.getProperty((String) key));
+		for(String key: fromToMap.keySet()) {
+
+			fromDir = new File(key);
+			toDir   = new File(fromToMap.get(key));
 			
 			if(toDir.isDirectory() != true) {
 				System.out.println("toDir is not a directory: " + toDir);
@@ -120,17 +119,6 @@ public class PodSync {
 	
 	}
 
-	private void storeProps() {
-		String comments = "PodSync directories to sync";
-		try {
-			Writer out = new BufferedWriter(new FileWriter(fnInput));
-			props.store(out, comments);
-		} catch (IOException e) {
-			e.printStackTrace();
-			return;
-		}
-	}
-
 	private void copyFile(File fromFile, File toDir) throws Exception {
 		File toFile = new File(toDir.getAbsolutePath() + File.separator + fromFile.getName());
 		
@@ -151,17 +139,6 @@ public class PodSync {
 		bos.close();
 		toFile.setLastModified(fromFile.lastModified());
 		
-	}
-
-	public void list() {
-		for(Object key: props.keySet()) {
-			if(! (key instanceof String))
-				continue;
-			String keys = (String) key;
-			String value = props.getProperty(keys);
-			
-			System.out.println("fromDir= " + keys + " toDir= " + value);
-		}
 	}
 }
 
