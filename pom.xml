@@ -15,6 +15,11 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>us.bpsm</groupId>
+			<artifactId>edn-java</artifactId>
+			<version>0.5.0</version>
+		</dependency>
+		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>4.12</version>
@@ -45,7 +50,7 @@
 								<transformer
 									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 									<manifestEntries>
-										<Main-Class>podsync.Main</Main-Class>
+										<Main-Class>podsync.PodSync</Main-Class>
 									</manifestEntries>
 								</transformer>
 							</transformers>

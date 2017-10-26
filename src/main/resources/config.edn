@@ -1,0 +1,3 @@
+{ :config { :name "PodSync" }
+  :podcasts [ {:url "http://fanboys.fm/episodes.mp3.rss" } ]
+}
