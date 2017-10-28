@@ -1,3 +1,13 @@
 { :config { :name "PodSync" }
-  :podcasts [ {:url "http://fanboys.fm/episodes.mp3.rss" } ]
+  :podcasts [ 
+       {:url "http://fanboys.fm/episodes.mp3.rss"
+        :fromDir "c:\\Users\\thomas\\Podcasts\\Fanboys\\"
+        :toDir "d:\\Fanboys\\" }
+       {:url "http://www.bitsundso.de/feed"
+        :fromDir "c:\\Users\\thomas\\Podcasts\\Bitsundso\\"
+        :toDir "d:\\Bitsundso\\" }
+       {:url "http://freakshow.fm/feed/mp3/"
+        :fromDir "c:\\Users\\thomas\\Podcasts\\Freakshow\\"
+        :toDir "d:\\Freakshow\\" }
+            ]
 }
