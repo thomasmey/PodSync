@@ -6,7 +6,7 @@
        {:url "http://www.bitsundso.de/feed"
         :fromDir "c:\\Users\\thomas\\Podcasts\\Bitsundso\\"
         :toDir "d:\\Bitsundso\\" }
-       {:url "http://freakshow.fm/feed/mp3/"
+       {:url "https://feeds.metaebene.me/freakshow/mp3"
         :fromDir "c:\\Users\\thomas\\Podcasts\\Freakshow\\"
         :toDir "d:\\Freakshow\\" }
             ]

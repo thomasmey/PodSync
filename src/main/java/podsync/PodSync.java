@@ -65,7 +65,7 @@ public class PodSync {
 	}
 
 	public void run() {
-		((List) config.get(Keyword.newKeyword("podcasts"))).forEach(p -> processPodcast(((Map)p)));
+		((List) config.get(Keyword.newKeyword("podcasts"))).parallelStream().forEach(p -> processPodcast(((Map)p)));
 	}
 
 	private void processPodcast(Map podcast) {
@@ -146,7 +146,6 @@ public class PodSync {
 		}
 
 		File[] fromDirFiles = fromDir.listFiles();
-		File[] toDirFiles = toDir.listFiles();
 
 		// check if we need to download the latest item
 		if(items.size() > 0) {
@@ -164,6 +163,8 @@ public class PodSync {
 			}
 		}
 
+		fromDirFiles = fromDir.listFiles();
+		File[] toDirFiles = toDir.listFiles();
 		// get youngest file from toDir
 		Comparator<File> fc = Comparator.comparing(File::lastModified);
 
