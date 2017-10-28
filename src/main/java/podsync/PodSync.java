@@ -9,8 +9,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -156,7 +159,24 @@ public class PodSync {
 			if(!Arrays.stream(fromDirFiles).anyMatch( f -> f.getName().equals(targetName))) {
 				log.log(Level.INFO, "Downloading {0} from {1}", new Object[] {targetName, url});
 				try {
-					copy(url.openStream(), new FileOutputStream(new File(fromDir, targetName)));
+					HttpURLConnection.setFollowRedirects(true);
+					HttpURLConnection uc;
+					outer:
+					while(true) {
+						uc = (HttpURLConnection) url.openConnection();
+						int rc = uc.getResponseCode();
+						switch(rc) {
+						case HttpURLConnection.HTTP_MOVED_PERM:
+						case HttpURLConnection.HTTP_MOVED_TEMP:
+							String location = uc.getHeaderField("Location");
+							URL next     = new URL(url, location); // Deal with relative URLs
+							url = next;
+							break;
+						case HttpURLConnection.HTTP_OK:
+							break outer;
+						}
+					}
+					copy(uc.getInputStream(), new FileOutputStream(new File(fromDir, targetName)));
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
