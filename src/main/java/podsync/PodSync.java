@@ -12,8 +12,6 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -75,7 +73,6 @@ public class PodSync {
 
 		List<Map> items = new ArrayList<>();
 		try {
-			URL rss = new URL((String) podcast.get(Keyword.newKeyword("url")));
 			DefaultHandler handler = new DefaultHandler() {
 				DateFormat rfc822 = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.US);
 				Map currentItem;
@@ -110,7 +107,7 @@ public class PodSync {
 						if(currentItem != null) {
 							try {
 								currentItem.put("url", new URL(currentAttributes.getValue("url")));
-								currentItem.put("length", Integer.valueOf(currentAttributes.getValue("length")));
+								currentItem.put("length", Long.valueOf(currentAttributes.getValue("length").trim()));
 								currentItem.put("type", currentAttributes.getValue("type"));
 							} catch (MalformedURLException e) {
 							}
@@ -128,7 +125,10 @@ public class PodSync {
 					}
 				}
 			};
-			SAXParserFactory.newInstance().newSAXParser().parse(rss.openStream(), handler);
+
+			URL rss = new URL((String) podcast.get(Keyword.newKeyword("url")));
+			HttpURLConnection uc = followRedirects(rss);
+			SAXParserFactory.newInstance().newSAXParser().parse(uc.getInputStream(), handler);
 		} catch (IOException | SAXException | ParserConfigurationException e1) {
 			e1.printStackTrace();
 		}
@@ -136,15 +136,10 @@ public class PodSync {
 		Collections.sort(items, (i1, i2) -> ((Date)i2.get("pubDate")).compareTo((Date) i1.get("pubDate")));
 
 		File fromDir = new File((String) podcast.get(Keyword.newKeyword("fromDir")));
-		File toDir = new File((String) podcast.get(Keyword.newKeyword("toDir")));
 
 		// check input
 		if(fromDir.isDirectory() != true) {
 			log.log(Level.SEVERE, "fromDir is not a directory: {0}", fromDir);
-			return;
-		}
-		if(toDir.isDirectory() != true) {
-			log.log(Level.SEVERE, "toDir is not a directory: {0}", toDir);
 			return;
 		}
 
@@ -158,29 +153,24 @@ public class PodSync {
 			String targetName = segments[segments.length - 1];
 			if(!Arrays.stream(fromDirFiles).anyMatch( f -> f.getName().equals(targetName))) {
 				log.log(Level.INFO, "Downloading {0} from {1}", new Object[] {targetName, url});
+				HttpURLConnection uc = followRedirects(url);
 				try {
-					HttpURLConnection.setFollowRedirects(true);
-					HttpURLConnection uc;
-					outer:
-					while(true) {
-						uc = (HttpURLConnection) url.openConnection();
-						int rc = uc.getResponseCode();
-						switch(rc) {
-						case HttpURLConnection.HTTP_MOVED_PERM:
-						case HttpURLConnection.HTTP_MOVED_TEMP:
-							String location = uc.getHeaderField("Location");
-							URL next     = new URL(url, location); // Deal with relative URLs
-							url = next;
-							break;
-						case HttpURLConnection.HTTP_OK:
-							break outer;
-						}
-					}
 					copy(uc.getInputStream(), new FileOutputStream(new File(fromDir, targetName)));
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
+		}
+
+		// when toDir doesn't exist, only download
+		String td = (String) podcast.get(Keyword.newKeyword("toDir"));
+		if(td == null)
+			return;
+
+		File toDir = new File(td);
+		if(toDir.isDirectory() != true) {
+			log.log(Level.SEVERE, "toDir is not a directory: {0}", toDir);
+			return;
 		}
 
 		fromDirFiles = fromDir.listFiles();
@@ -233,6 +223,30 @@ public class PodSync {
 				}
 			}
 		}
+	}
+
+	private static HttpURLConnection followRedirects(URL url) {
+		try {
+			HttpURLConnection.setFollowRedirects(true);
+			HttpURLConnection uc;
+			while(true) {
+				uc = (HttpURLConnection) url.openConnection();
+				int rc = uc.getResponseCode();
+				switch(rc) {
+				case HttpURLConnection.HTTP_MOVED_PERM:
+				case HttpURLConnection.HTTP_MOVED_TEMP:
+					String location = uc.getHeaderField("Location");
+					URL next = new URL(url, location);
+					url = next;
+					break;
+				case HttpURLConnection.HTTP_OK:
+					return uc;
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		throw new IllegalStateException("couldn't retrieve URL " + url);
 	}
 
 	private static void copy(InputStream from, OutputStream to) throws IOException {

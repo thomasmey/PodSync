@@ -9,5 +9,14 @@
        {:url "http://freakshow.fm/feed/mp3"
         :fromDir "c:\\Users\\thomas\\Podcasts\\Freakshow\\"
         :toDir "d:\\Freakshow\\" }
+       {:url "http://logbuch-netzpolitik.de/feed/mp3"
+        :fromDir "c:\\Users\\thomas\\Podcasts\\Logbuch\\"
+       }
+       {:url "https://www.kuechenstud.io/lagedernation/feed/mp3"
+        :fromDir "c:\\Users\\thomas\\Podcasts\\LageDerNation\\"
+       }
+       { :url "http://web.ard.de/radiotatort/rss/podcast.xml"
+         :fromDir "c:\\Users\\thomas\\Podcasts\\RadioTatort\\"
+       }
             ]
 }
