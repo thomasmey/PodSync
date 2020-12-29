@@ -5,12 +5,15 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
@@ -28,9 +31,16 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.EntityTag;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -56,12 +66,18 @@ public class PodSync {
 		Parseable parseable = Parsers.newParseable(new InputStreamReader(is, StandardCharsets.UTF_8));
 		Parser parser = Parsers.newParser(Parsers.defaultConfiguration());
 		Map config = (Map) parser.nextValue(parseable);
-		PodSync ps = new PodSync(config);
 
+		Map rssState = new HashMap<>();
+		File rsf = new File((String) config.get(Keyword.newKeyword("rssState")));
+		if(rsf.exists() && rsf.isFile()) {
+			Parseable rsp = Parsers.newParseable(new FileReader(rsf));
+			rssState = (Map) parser.nextValue(rsp);
+		}
+		PodSync ps = new PodSync(config, rssState);
 		ps.run();
 	}
 
-	PodSync(Map config) throws IOException {
+	PodSync(Map config, Map rssState) throws IOException {
 		this.config = config;
 	}
 
@@ -87,10 +103,11 @@ public class PodSync {
 					}
 					currentAttributes = attributes;
 					currentLevel++;
+					currentValue = "";
 				}
 				@Override
 				public void characters(char[] ch, int start, int length) throws SAXException {
-					currentValue = new String(ch, start, length);
+					currentValue += new String(ch, start, length);
 				}
 				@Override
 				public void endElement(String arg0, String arg1, String qName) throws SAXException {
@@ -119,6 +136,7 @@ public class PodSync {
 								Date d = rfc822.parse(currentValue);
 								currentItem.put(qName, d);
 							} catch (ParseException e) {
+								log.log(Level.SEVERE, "failed!", e);
 							}
 						}
 						break;
@@ -126,10 +144,44 @@ public class PodSync {
 				}
 			};
 
+			Client client = ClientBuilder.newClient();
+
 			URL rss = new URL((String) podcast.get(Keyword.newKeyword("url")));
-			HttpURLConnection uc = followRedirects(rss);
-			SAXParserFactory.newInstance().newSAXParser().parse(uc.getInputStream(), handler);
-		} catch (IOException | SAXException | ParserConfigurationException e1) {
+			String username = (String) podcast.get(Keyword.newKeyword("username"));
+			String password = (String) podcast.get(Keyword.newKeyword("password"));
+			String etag = null;
+			if(username != null && password != null) {
+				client.register(HttpAuthenticationFeature.basic(username, password));
+			}
+			URI uri = rss.toURI();
+			loop:
+				for(;;) {
+					log.log(Level.INFO, "Fetching RSS feed from {0}", uri);
+					try(Response r = client.target(uri).request().header(HttpHeaders.IF_NONE_MATCH, etag).head()) {
+						log.log(Level.INFO, "result {0}", r.getStatus());
+						switch(Response.Status.fromStatusCode(r.getStatus())) {
+						case OK:
+							try(Response rd = client.target(uri).request().header(HttpHeaders.IF_NONE_MATCH, etag).get()) {
+								if(rd.getStatus() == Response.Status.OK.getStatusCode()) {
+									EntityTag entityTag = rd.getEntityTag();
+									InputStream in = (InputStream) rd.getEntity();
+									SAXParserFactory.newInstance().newSAXParser().parse(in, handler);
+									break loop;
+								}
+							}
+							break;
+						case MOVED_PERMANENTLY:
+							//TODO: update config with new URI
+						case FOUND:
+							uri = r.getLocation();
+							log.log(Level.INFO, "redirect to {0}", uri);
+							continue loop;
+						case NOT_MODIFIED:
+							return;
+						}
+					}
+				}
+		} catch (IOException | SAXException | ParserConfigurationException | URISyntaxException e1) {
 			e1.printStackTrace();
 		}
 
@@ -154,9 +206,10 @@ public class PodSync {
 			if(!Arrays.stream(fromDirFiles).anyMatch( f -> f.getName().equals(targetName))) {
 				log.log(Level.INFO, "Downloading {0} from {1}", new Object[] {targetName, url});
 				HttpURLConnection uc = followRedirects(url);
-				try {
+				try(Response r = ClientBuilder.newClient().target(url.toURI()).request().head()) {
+					MultivaluedMap<String, Object> headers = r.getHeaders();
 					copy(uc.getInputStream(), new FileOutputStream(new File(fromDir, targetName)));
-				} catch (IOException e) {
+				} catch (IOException | URISyntaxException e) {
 					e.printStackTrace();
 				}
 			}
