@@ -1,0 +1,59 @@
+{ 
+ "podcasts": [
+               {
+                "url": "https://feeds.transistor.fm/oxide-and-friends",
+                "fromDir": "c:\\Users\\thomas\\Podcasts\\OxideAndFriends\\",
+                "toDir": "d:\\OxideAndFriends\\"
+               },
+               {
+                "url":"https://stacktracepodcast.fm/feed.rss",
+                "fromDir": "c:\\Users\\thomas\\Podcasts\\Stacktrace\\",
+                "toDir": "d:\\Stacktrace\\"
+               },
+               {
+                "url":"https://kubernetespodcast.com/feeds/audio.xml",
+                "fromDir": "c:\\Users\\thomas\\Podcasts\\Kubernetes Podcast\\",
+                "toDir": "d:\\Kubernetes Podcast\\"
+               },
+               {
+                "url":"https://feeds.lagedernation.org/feeds/ldn-mp3.xml",
+                "fromDir": "c:\\Users\\thomas\\Podcasts\\LageDerNation\\",
+                "toDir": "d:\\LageDerNation\\"
+               },
+               {
+                "url":"https://feeds.buzzsprout.com/176239.rss",
+                "fromDir": "c:\\Users\\thomas\\Podcasts\\Programmierbar\\",
+                "toDir": "d:\\Programmierbar\\"
+               },
+               {
+                "url":"http://www.bitsundso.de/feed/",
+                "fromDir": "c:\\Users\\thomas\\Podcasts\\Bitsundso\\",
+                "toDir": "d:\\Bitsundso\\"
+               },
+               {
+                "url":"http://freakshow.fm/feed/mp3",
+                "fromDir": "c:\\Users\\thomas\\Podcasts\\Freakshow\\",
+                "toDir": "d:\\Freakshow\\"
+               },
+               {
+                "url": "http://logbuch-netzpolitik.de/feed/mp3",
+                "fromDir": "c:\\Users\\thomas\\Podcasts\\Logbuch\\",
+                "toDir": "d:\\Logbuch\\"
+               },
+               {
+                "url":"http://m3y3r.de/ardaudiothek-rss.php?show=95422134",
+                "fromDir": "c:\\Users\\thomas\\Podcasts\\RadioTatort\\",
+                "toDir": "d:\\RadioTatort\\"
+               },
+               {
+                "url":"http://m3y3r.de/ardaudiothek-rss.php?show=12111619",
+                "fromDir": "c:\\Users\\thomas\\Podcasts\\VanDusen\\",
+                "toDir": "d:\\VanDusen\\"
+               },
+               {
+                "url":"https://glitterbrains.org/feed/mp3/",
+                "fromDir": "c:\\Users\\thomas\\Podcasts\\glitterbrains\\",
+                "toDir": "d:\\glitterbrains\\"
+               }
+            ]
+}
